@@ -1,1 +1,13 @@
 # diffusion-flux
+
+## To Install MD-Analysis 
+
+conda create -n myenv python=3.8  #Creating the environment
+conda activate myenv  # Activate the environment
+
+conda install -c conda-forge mdanalysis
+
+python -c "import MDAnalysis; print(MDAnalysis.__version__)"
+
+conda activate myenv  # Activating Conda environment before running Python scripts
+
