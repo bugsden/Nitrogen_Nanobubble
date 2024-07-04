@@ -8,6 +8,7 @@ conda config --add channels conda-forge
 conda install -c conda-forge mdanalysis
 
 python -c "import MDAnalysis; print(MDAnalysis.__version__)"
+conda install mdanalysistests 
 
 conda activate myenv  # Activating Conda environment before running Python scripts
 
