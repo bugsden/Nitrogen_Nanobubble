@@ -17,6 +17,9 @@ center_of_mass = ag.center_of_mass()
 max_distance = 40  
 bins = 100
 counts = np.zeros(bins)
+counts = np.zeros(bins)
+bin_centers = np.zeros(bins)  
+bin_index = np.zeros(bins)
 
 # Loop through each frame 
 for ts in u.trajectory:
@@ -26,13 +29,12 @@ for ts in u.trajectory:
         if atom.position[2] > center_of_mass[2]:
                 # Calculate distance from center of mass along Z-axis
                 distance = atom.position[2] - center_of_mass[2]
-                if distance <= max_distance:
-                    if distance != 0: 
-                        bin_edges = np.histogram_bin_edges(distance, bins, range=[1,max_distance])
-                        bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
-                        bin_index = np.searchsorted(bin_edges, distance, side='left') - 1 #searching to find the index where distance fits in the bin_edge
-                        counts[bin_index] += 1
+                if 0 < distance <= max_distance:
+                    bin_edges = np.histogram_bin_edges(distance, bins, range=[1,max_distance])
+                    bin_index = np.searchsorted(bin_edges, distance, side='left') - 1 #searching to find the index where distance fits in the bin_edge
+                    counts[bin_index] += 1
         # Calculate density in each bin
+        bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
         volumes = (4/3)*np.pi * ((bin_centers)**3)
         #bin_volumes = (4/3)*np.pi * ((bin_edges[1:] - bin_edges[:-1])**3)
         densities = counts/volumes    
@@ -61,11 +63,11 @@ for i, density in enumerate(densities):
         z_coordinate = bin_centers[i]
         break
 
-print(bin_centers[0])
-print(bin_index[0])
-print(volumes[0]) 
-print(counts[0])
-print(densities[0])
+
+print(bin_index)
+#print(volumes)
+#print(counts)
+#print(densities)
 
 if z_coordinate is not None:
     print(f"The radius is approximately {z_coordinate:.6f} Angstroms.")
