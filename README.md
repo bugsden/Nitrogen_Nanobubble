@@ -14,4 +14,6 @@ conda activate myenv  # Activating Conda environment before running Python scrip
 
 ## Calling MD-Analysis
 
+# Links to refer 
+https://userguide.mdanalysis.org/stable/installation.html
 
