@@ -13,40 +13,46 @@ center_of_mass = ag.center_of_mass()
 
 # Set parameters
 max_distance = 40  
-num = 40  # Number radii considered
+num = 0 # Number radii considered
 
 # Initialize dictionary for counting occurrences in each bin
-distance_counts = {i: 0 for i in range(1, num + 1)}
-bin_centers = np.arange(0, num + 1)
-counts = np.zeros(num+1)
+bins = np.arange(1, num + 1)
+counts = np.zeros((len(u.trajectory), num+1))
+r_count = np.zeros(num+1)
+outer_volumes = np.zeros(num+1)
+inner_volumes = np.zeros(num+1)
+volumes = np.zeros(num+1)
 
 # Loop through each frame 
-for ts in u.trajectory:
+for ts in u.trajectory[0:1]:
     for atom in ag:
         # Calculate distance from center of mass along Z-axis
         distance = np.sqrt(np.sum((atom.position - center_of_mass)**2))
         if distance <= max_distance:
             bin_index = int(distance / max_distance * num) + 1  # Calculate bin index
-            if bin_index in bin_centers:
-                counts[bin_index] += 1
-                continue;
+            if bin_index in bins:
+                counts[ts.frame, bin_index] += 1
 
-print(distance)
-print(bin_centers[1:6])
+average = np.mean(counts,axis = 0)
 
-# Calculate volumes of spherical shells (hollow spheres)
-outer_volumes = (4/3) * np.pi * (bin_centers ** 3)
-inner_volumes = (4/3) * np.pi * ((bin_centers - 1) ** 3)
-volumes = outer_volumes - inner_volumes
+for i in range (num +1): 
+    # Calculate volumes of spherical shells (hollow spheres)
+    radial_count = abs(average[i+1] - average[i])
+    outer_volumes = (4/3) * np.pi * (bins[i]** 3)
+    inner_volumes = (4/3) * np.pi * ((bins [i- 1]) ** 3)
+    volumes[i] = outer_volumes - inner_volumes
+    
+
+# print(average[9])
+
 
 # Calculate densities
-densities = counts / volumes
-print(counts[1:6])
-print(densities[1:6])
+densities = (average / volumes) * (((10**4)*6.023)/28)
+print(densities)
 
 # Plot the radial density profile along Z-axis
 plt.figure(figsize=(8, 6))
-plt.plot(bin_centers, densities, linestyle='-')
+plt.plot(bins, densities, linestyle='-')
 
 plt.xlabel('Distance Bin')
 plt.ylabel('Number Density (number of atoms per cubic Angstrom)')
@@ -59,15 +65,15 @@ plt.show()
 max_density = np.max(densities)
 
 # Set threshold density as 0.02
-threshold_density = 0.02 * max_density  # 2% of maximum density
+threshold_density = 0.05 * max_density  # 2% of maximum density
 
 # Find distances where densities drop below threshold
-threshold_distances = []
-for bin_index, density in zip(bin_centers, densities):
-    if density < threshold_density:
-        threshold_distances.append(bin_index)
+for i in range (0,40): 
+    if densities[i] < threshold_density and i > 25:
+            print(f"The radius is approximately {i:.6f} Angstroms.")
+            break;
+    else:
+            continue;
 
-if threshold_distances:
-    print(f"The radius is approximately {threshold_distances[0]:.6f} Angstroms.")
-else:
-    print("No distances found below the threshold density.")
+
+
