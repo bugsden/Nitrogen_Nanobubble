@@ -1,49 +1,54 @@
-import MDAnalysis as mda    #import MDAnalysis imported as mda
+import MDAnalysis as mda
 import numpy as np
 import matplotlib.pyplot as plt
 
 # Load PSF and DCD files
-#create a Universe
 u = mda.Universe('data-p.psf', 'eq-1.dcd', format="LAMMPS")
 
 # Select atoms named 'NIT'
 ag = u.select_atoms('resname NIT')
-#print(len(ag))
 
 # Calculate center of mass of selected atoms 
 center_of_mass = ag.center_of_mass()
 
 # Set parameters
 max_distance = 40  
-bins = 100
-counts = np.zeros(bins)
-counts = np.zeros(bins)
-bin_centers = np.zeros(bins)  
-bin_index = np.zeros(bins)
+num = 40  # Number radii considered
+
+# Initialize dictionary for counting occurrences in each bin
+distance_counts = {i: 0 for i in range(1, num + 1)}
+bin_centers = np.arange(0, num + 1)
+counts = np.zeros(num+1)
 
 # Loop through each frame 
 for ts in u.trajectory:
-    #print(len(ag))
     for atom in ag:
-        # Check if atom's Z-coordinate is greater than center of mass's Z-coordinate
-        if atom.position[2] > center_of_mass[2]:
-                # Calculate distance from center of mass along Z-axis
-                distance = atom.position[2] - center_of_mass[2]
-                if 0 < distance <= max_distance:
-                    bin_edges = np.histogram_bin_edges(distance, bins, range=[1,max_distance])
-                    bin_index = np.searchsorted(bin_edges, distance, side='left') - 1 #searching to find the index where distance fits in the bin_edge
-                    counts[bin_index] += 1
-        # Calculate density in each bin
-        bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2
-        volumes = (4/3)*np.pi * ((bin_centers)**3)
-        #bin_volumes = (4/3)*np.pi * ((bin_edges[1:] - bin_edges[:-1])**3)
-        densities = counts/volumes    
+        # Calculate distance from center of mass along Z-axis
+        distance = np.sqrt(np.sum((atom.position - center_of_mass)**2))
+        if distance <= max_distance:
+            bin_index = int(distance / max_distance * num) + 1  # Calculate bin index
+            if bin_index in bin_centers:
+                counts[bin_index] += 1
+                continue;
+
+print(distance)
+print(bin_centers[1:6])
+
+# Calculate volumes of spherical shells (hollow spheres)
+outer_volumes = (4/3) * np.pi * (bin_centers ** 3)
+inner_volumes = (4/3) * np.pi * ((bin_centers - 1) ** 3)
+volumes = outer_volumes - inner_volumes
+
+# Calculate densities
+densities = counts / volumes
+print(counts[1:6])
+print(densities[1:6])
 
 # Plot the radial density profile along Z-axis
 plt.figure(figsize=(8, 6))
 plt.plot(bin_centers, densities, linestyle='-')
 
-plt.xlabel('Distance (Angstroms)')
+plt.xlabel('Distance Bin')
 plt.ylabel('Number Density (number of atoms per cubic Angstrom)')
 plt.title('Number Density Profile along Radius')
 plt.grid(True)
@@ -51,23 +56,18 @@ plt.tight_layout()
 plt.show()
 
 # Determine maximum observed density
-original_density = np.max(densities)
+max_density = np.max(densities)
 
 # Set threshold density as 0.02
-threshold_density = 2.86*(10e-9)* original_density  # 2% of original density
+threshold_density = 0.02 * max_density  # 2% of maximum density
 
-# Find the Z coordinate where density drops below threshold
-z_coordinate = None
-for i, density in enumerate(densities):
+# Find distances where densities drop below threshold
+threshold_distances = []
+for bin_index, density in zip(bin_centers, densities):
     if density < threshold_density:
-        z_coordinate = bin_centers[i]
-        break
+        threshold_distances.append(bin_index)
 
-
-print(bin_index)
-#print(volumes)
-#print(counts)
-#print(densities)
-
-if z_coordinate is not None:
-    print(f"The radius is approximately {z_coordinate:.6f} Angstroms.")
+if threshold_distances:
+    print(f"The radius is approximately {threshold_distances[0]:.6f} Angstroms.")
+else:
+    print("No distances found below the threshold density.")
